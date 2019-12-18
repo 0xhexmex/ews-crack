@@ -56,13 +56,13 @@ def ews_config_setup(user, password, domain):
 
     try:
         config = Configuration(
-            server='outlook.office365.com',
+            server='outlook.office365.com', ## need to change this to something like: server="{}".format(exchserver)
             credentials=Credentials(
                 username="{}@{}".format(user, domain),
                 password=password))
 
         account = Account(
-            primary_smtp_address="{}@{}".format(user, domain),
+            "{}@{}".format(user, domain), ## Removed the 'primary_smtp_address=' because a password may be correct but will return false-negative if the user doesn't have an SMTP mailbox
             autodiscover=False,
             config=config,
             access_type=DELEGATE)
@@ -82,9 +82,9 @@ def test_single_mode(domain, username, password):
     account, config = ews_config_setup(username, password, domain)
     if account is None and config is None:
         return False
-
-    next(iter(account.inbox.all()))
-    return True
+    else:
+    #next(iter(account.inbox.all())) ## Prone to false-negatives, password may be correct but user doesn't have a mailbox
+        return True
 
 
 def multi_account_test(domain, filename):
