@@ -56,7 +56,6 @@ def ews_config_setup(user, password, domain, exchserver):
 
     try:
         config = Configuration(
-            #server='hybrid.berkshirebank.com',
             server="{}".format(exchserver),
             credentials=Credentials(
                 username="{}@{}".format(user, domain),
